@@ -1796,7 +1796,9 @@ If optional arg NO-ACTIVATE is non-nil, don't activate packages."
           (pkg-dir
            (insert (propertize (if (member status '("unsigned" "dependency"))
                                    "Installed"
-                                 (capitalize status)) ;FIXME: Why comment-face?
+                                 (if (equal status "incompat")
+                                     "Incompatible"
+                                   (capitalize status))) ;FIXME: Why comment-face?
                                'font-lock-face 'font-lock-comment-face))
            (insert " in `")
            ;; Todo: Add button for uninstalling.
@@ -2072,6 +2074,7 @@ package PKG-DESC, add one.  The alist is keyed with PKG-DESC."
          ((version-list-< version hv) "obsolete")
          (t "disabled"))))
      ((package-built-in-p name version) "obsolete")
+     ((not (package--compatible-p pkg-desc)) "incompat")
      (dir                               ;One of the installed packages.
       (cond
        ((not (file-exists-p (package-desc-dir pkg-desc))) "deleted")
@@ -2092,6 +2095,17 @@ package PKG-DESC, add one.  The alist is keyed with PKG-DESC."
           (if (not signed) "unsigned"
             (if (package--user-selected-p name)
                 "installed" "dependency")))))))))
+
+(defvar package--emacs-version-list (version-to-list emacs-version)
+  "`emacs-version', as a list.")
+
+(defun package--compatible-p (pkg)
+  "Return nil if PKG has no chance of being installable.
+PKG is a package-desc object.
+Currently, only checks if PKG depends on a higher `emacs-version'
+than the one being used."
+  (when-let ((version (cdr-safe (assq 'emacs (package-desc-reqs pkg)))))
+    (version-list-<= version package--emacs-version-list)))
 
 (defun package-menu--refresh (&optional packages keywords)
   "Re-populate the `tabulated-list-entries'.
@@ -2222,6 +2236,7 @@ Return (PKG-DESC [NAME VERSION STATUS DOC])."
                  (`"installed" 'font-lock-comment-face)
                  (`"dependency" 'font-lock-comment-face)
                  (`"unsigned"  'font-lock-warning-face)
+                 (`"incompat"  'font-lock-comment-face)
                  (_            'font-lock-warning-face)))) ; obsolete.
     (list pkg-desc
           `[,(list (symbol-name (package-desc-name pkg-desc))
@@ -2494,6 +2509,8 @@ Optional argument NOQUERY non-nil means do not ask the user to confirm."
           ((string= sB "built-in") nil)
           ((string= sA "obsolete") t)
           ((string= sB "obsolete") nil)
+          ((string= sA "incompat") t)
+          ((string= sB "incompat") nil)
           (t (string< sA sB)))))
 
 (defun package-menu--description-predicate (A B)
