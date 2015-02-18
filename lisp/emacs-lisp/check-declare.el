@@ -295,16 +295,20 @@ Return a list of any errors found."
     (dolist (e (check-declare-sort alist))
       (if (setq err (check-declare-verify (car e) (cdr e)))
           (setq errlist (cons (cons (car e) err) errlist))))
+    (setq errlist (nreverse errlist))
     (if (get-buffer check-declare-warning-buffer)
         (kill-buffer check-declare-warning-buffer))
     (with-current-buffer (get-buffer-create check-declare-warning-buffer)
       (unless (derived-mode-p 'compilation-mode)
-        (compilation-mode)))
+        (compilation-mode))
+      (let ((inhibit-read-only t))
+        (insert "\f\n"))
+      (compilation-forget-errors))
     ;; Sort back again so that errors are ordered by the files
     ;; containing the declare-function statements.
     (dolist (e (check-declare-sort errlist))
-        (dolist (f (cdr e))
-          (check-declare-warn (car e) (cadr f) (car f) (nth 2 f))))
+      (dolist (f (cdr e))
+        (check-declare-warn (car e) (cadr f) (car f) (nth 2 f))))
     errlist))
 
 ;;;###autoload
