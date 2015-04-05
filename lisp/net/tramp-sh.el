@@ -1175,15 +1175,19 @@ target of the symlink differ."
     (tramp-message vec 5 "file attributes with ls: %s" localname)
     (tramp-send-command
      vec
-     (format "(%s %s || %s -h %s) && %s %s %s"
+     (format "(%s %s || %s -h %s) && %s %s %s %s"
 	     (tramp-get-file-exists-command vec)
 	     (tramp-shell-quote-argument localname)
 	     (tramp-get-test-command vec)
 	     (tramp-shell-quote-argument localname)
 	     (tramp-get-ls-command vec)
+	     ;; On systems which have no quoting style, file names
+	     ;; with special characters could fail.
+	     (if (tramp-get-ls-command-with-quoting-style vec)
+		 "--quoting-style=c" "")
 	     (if (eq id-format 'integer) "-ildn" "-ild")
 	     (tramp-shell-quote-argument localname)))
-    ;; parse `ls -l' output ...
+    ;; Parse `ls -l' output ...
     (with-current-buffer (tramp-get-buffer vec)
       (when (> (buffer-size) 0)
         (goto-char (point-min))
@@ -1222,11 +1226,14 @@ target of the symlink differ."
         ;; From the file modes, figure out other stuff.
         (setq symlinkp (eq ?l (aref res-filemodes 0)))
         (setq dirp (eq ?d (aref res-filemodes 0)))
-        ;; if symlink, find out file name pointed to
+        ;; If symlink, find out file name pointed to.
         (when symlinkp
           (search-forward "-> ")
-          (setq res-symlink-target (buffer-substring (point) (point-at-eol))))
-        ;; return data gathered
+          (setq res-symlink-target
+		(if (tramp-get-ls-command-with-quoting-style vec)
+		    (read (current-buffer))
+		  (buffer-substring (point) (point-at-eol)))))
+        ;; Return data gathered.
         (list
          ;; 0. t for directory, string (name linked to) for symbolic
          ;; link, or nil.
@@ -1249,9 +1256,9 @@ target of the symlink differ."
          ;; 8. File modes, as a string of ten letters or dashes as in ls -l.
          res-filemodes
          ;; 9. t if file's gid would change if file were deleted and
-         ;; recreated.  Will be set in `tramp-convert-file-attributes'
+         ;; recreated.  Will be set in `tramp-convert-file-attributes'.
          t
-         ;; 10. inode number.
+         ;; 10. Inode number.
          res-inode
          ;; 11. Device number.  Will be replaced by a virtual device number.
          -1
@@ -1275,16 +1282,21 @@ target of the symlink differ."
   (tramp-send-command-and-read
    vec
    (format
-    ;; On Opsware, pdksh (which is the true name of ksh there) doesn't
-    ;; parse correctly the sequence "((".  Therefore, we add a space.
-    "( (%s %s || %s -h %s) && %s -c '((\"%%N\") %%h %s %s %%Xe0 %%Ye0 %%Ze0 %%se0 \"%%A\" t %%ie0 -1)' \"%s\" || echo nil)"
+    (concat
+     ;; On Opsware, pdksh (which is the true name of ksh there)
+     ;; doesn't parse correctly the sequence "((".  Therefore, we add
+     ;; a space.  Apostrophes in the stat output are masked as "//",
+     ;; in order to make a proper shell escape of them in file names.
+     "( (%s %s || %s -h %s) && (%s -c "
+     "'((//%%N//) %%h %s %s %%Xe0 %%Ye0 %%Ze0 %%se0 //%%A// t %%ie0 -1)' "
+     "%s | sed -e 's/\"/\\\\\"/g' -e 's/\\/\\//\"/g') || echo nil)")
     (tramp-get-file-exists-command vec)
     (tramp-shell-quote-argument localname)
     (tramp-get-test-command vec)
     (tramp-shell-quote-argument localname)
     (tramp-get-remote-stat vec)
-    (if (eq id-format 'integer) "%ue0" "\"%U\"")
-    (if (eq id-format 'integer) "%ge0" "\"%G\"")
+    (if (eq id-format 'integer) "%ue0" "//%U//")
+    (if (eq id-format 'integer) "%ge0" "//%G//")
     (tramp-shell-quote-argument localname))))
 
 (defun tramp-sh-handle-set-visited-file-modtime (&optional time-list)
@@ -1717,14 +1729,13 @@ be non-negative integers."
     (concat
      ;; We must care about file names with spaces, or starting with
      ;; "-"; this would confuse xargs.  "ls -aQ" might be a solution,
-     ;; but it does not work on all remote systems.  Therefore, we
-     ;; use \000 as file separator.
-     ;; Apostrophes in the stat output are masked as \037 characters, in
-     ;; order to make a proper shell escape of them in file names.
+     ;; but it does not work on all remote systems.  Apostrophes in
+     ;; the stat output are masked as "//", in order to make a proper
+     ;; shell escape of them in file names.
      "cd %s && echo \"(\"; (%s %s -a | "
      "xargs %s -c "
-     "'(\037%%n\037 (\037%%N\037) %%h %s %s %%Xe0 %%Ye0 %%Ze0 %%se0 \037%%A\037 t %%ie0 -1)'"
-     " -- 2>/dev/null | sed -e 's/\"/\\\\\"/g' -e 's/\037/\"/g'); echo \")\"")
+     "'(//%%n// (//%%N//) %%h %s %s %%Xe0 %%Ye0 %%Ze0 %%se0 //%%A// t %%ie0 -1)' "
+     "-- 2>/dev/null | sed -e 's/\"/\\\\\"/g' -e 's/\\/\\//\"/g'); echo \")\"")
     (tramp-shell-quote-argument localname)
     (tramp-get-ls-command vec)
     ;; On systems which have no quoting style, file names with
@@ -1732,8 +1743,8 @@ be non-negative integers."
     (if (tramp-get-ls-command-with-quoting-style vec)
 	"--quoting-style=shell" "")
     (tramp-get-remote-stat vec)
-    (if (eq id-format 'integer) "%ue0" "\037%U\037")
-    (if (eq id-format 'integer) "%ge0" "\037%G\037"))))
+    (if (eq id-format 'integer) "%ue0" "//%U//")
+    (if (eq id-format 'integer) "%ge0" "//%G//"))))
 
 ;; This function should return "foo/" for directories and "bar" for
 ;; files.
@@ -3725,6 +3736,10 @@ Only send the definition if it has not already been done."
 		  (tramp-get-connection-process vec) "scripts" nil)))
     (unless (member name scripts)
       (with-tramp-progress-reporter vec 5 (format "Sending script `%s'" name)
+	;; In bash, leading TABs like in `tramp-vc-registered-read-file-names'
+	;; could result in unwanted command expansion.  Avoid this.
+	(setq script (tramp-compat-replace-regexp-in-string
+		      (make-string 1 ?\t) (make-string 8 ? ) script))
 	;; The script could contain a call of Perl.  This is masked with `%s'.
 	(when (and (string-match "%s" script)
 		   (not (tramp-get-remote-perl vec)))
@@ -4565,7 +4580,7 @@ Gateway hops are already opened."
 
     ;; In case the host name is not used for the remote shell
     ;; command, the user could be misguided by applying a random
-    ;; hostname.
+    ;; host name.
     (let* ((v (car target-alist))
 	   (method (tramp-file-name-method v))
 	   (host (tramp-file-name-host v)))
@@ -4611,9 +4626,13 @@ Gateway hops are already opened."
 		(setq tramp-ssh-controlmaster-options "-o ControlMaster=auto")))
 	    (unless (zerop (length tramp-ssh-controlmaster-options))
 	      (with-temp-buffer
+		;; When we use a non-existing host name, we could run
+		;; into DNS timeouts.  So we use "localhost" with an
+		;; improper port, expecting nobody runs sshd on the
+		;; telnet port.
 		(tramp-call-process
 		 vec "ssh" nil t nil
-		 "-o" "ControlPath=%C" "host.does.not.exist")
+		 "-p" "23" "-o" "ControlPath=%C" "localhost")
 		(goto-char (point-min))
 		(setq tramp-ssh-controlmaster-options
 		      (if (search-forward-regexp "unknown.+key" nil t)

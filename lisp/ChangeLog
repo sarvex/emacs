@@ -1,3 +1,637 @@
+2015-04-05  Pete Williamson  <petewil@chromium.org>  (tiny-change)
+
+	Fix .emacs and .emacs.d/init file recursion problem for NaCl
+	* files.el (file-truename): Add NaCl to the exception list ms-dos uses.
+
+2015-04-04  Alan Mackenzie  <acm@muc.de>
+
+	* progmodes/cc-mode.el (c-font-lock-init): Revert 2015-02-01 change
+	"Stop Font Lock forcing fontification from BOL."  (Bug#20245)
+
+2015-04-04  Artur Malabarba  <bruce.connor.am@gmail.com>
+
+	* emacs-lisp/package.el (package--download-and-read-archives): Add
+	`package-archives' to `package--downloads-in-progress' instead of
+	overwriting it.
+	(package--with-work-buffer-async): Protect macro arguments.
+
+2015-04-04  Michael Albinus  <michael.albinus@gmx.de>
+
+	* net/tramp-cache.el (tramp-flush-directory-property): Quote directory
+	name when used in regexp.
+
+2015-04-04  Alan Mackenzie  <acm@muc.de>
+
+	Fix debbugs#20240 part two (jit-lock error during `comment-dwim').
+
+	* jit-lock.el (jit-lock-after-change): Widen the buffer before
+	putting 'fontified text properties.
+
+2015-04-03  Michael Albinus  <michael.albinus@gmx.de>
+
+	* net/tramp-cache.el (tramp-flush-file-property)
+	(tramp-flush-directory-property): Use `directory-file-name' of the
+	truename.  (Bug#20249)
+
+2015-04-03  Nicolas Richard  <theonewiththeevillook@yahoo.fr>
+
+	* pcmpl-unix.el (pcmpl-ssh-known-hosts): Use `char-before' instead
+	of `looking-back' (bug#17284).
+
+2015-04-03  Dmitry Gutov  <dgutov@yandex.ru>
+
+	* progmodes/js.el (js-indent-line): Do nothing when bol is inside
+	a string (https://github.com/mooz/js2-mode/issues/227).
+
+2015-04-02  Stefan Monnier  <monnier@iro.umontreal.ca>
+
+	* abbrev.el (define-abbrev-table): Treat a non-string "docstring" as
+	part of the "props" arguments rather than silently ignoring it.
+
+	* emacs-lisp/lisp-mnt.el (lm-version): Don't burp in a non-file buffer.
+
+2015-04-01  Alan Mackenzie  <acm@muc.de>
+
+	Fix the CC Mode fixes from 2015-03-30.  Fixes debbugs#20240.
+
+	* progmodes/cc-mode.el (c-extend-after-change-region):
+	Widen before applying text properties.
+	* progmodes/cc-langs.el (c-before-font-lock-functions): Update an
+	entry to a new function name.
+
+2015-04-01  Paul Eggert  <eggert@cs.ucla.edu>
+
+	* emacs-lisp/package.el: Spelling fixes and use active voice.
+
+2015-04-01  Artur Malabarba  <bruce.connor.am@gmail.com>
+
+	* emacs-lisp/package.el: Implement asynchronous refreshing.
+	(package--with-work-buffer-async)
+	(package--check-signature-content)
+	(package--update-downloads-in-progress): New functions.
+	(package--check-signature, package--download-one-archive)
+	(package--download-and-read-archives, package-refresh-contents):
+	Optional arguments for async usage.
+	(package--post-download-archives-hook): New variable.  Hook run
+	after every refresh.
+
+	* emacs-lisp/package.el: Make package-menu asynchronous.
+	(package-menu-async): New variable.  Controls whether
+	`list-packages' is asynchronous.
+	(list-packages): Now asynchronous by default.
+	(package-menu--new-package-list): Always buffer-local.
+	(package-menu--post-refresh)
+	(package-menu--find-and-notify-upgrades)
+	(package-menu--populate-new-package-list): New functions.
+
+2015-03-31  Simen Heggestøyl  <simenheg@gmail.com>
+
+	* textmodes/css-mode.el (css-mode): Derive from `prog-mode'.
+
+2015-03-31  Stefan Monnier  <monnier@iro.umontreal.ca>
+
+	* jit-lock.el (jit-lock--run-functions): Fix min/max copy&paste error.
+
+	Let jit-lock know the result of font-lock-extend-region-functions.
+	* jit-lock.el (jit-lock--run-functions): New function.
+	(jit-lock-fontify-now): Use it.  Handle fontification bounds more
+	precisely in case the backend functions fontify more than requested.
+	Don't round up to whole lines since that shouldn't be needed
+	any more.
+	* font-lock.el (font-lock-fontify-region-function): Adjust docstring.
+	(font-lock-inhibit-thing-lock): Make obsolete.
+	(font-lock-default-fontify-region): Return the bounds actually used.
+
+	* emacs-lisp/eieio-base.el (eieio-persistent-validate/fix-slot-value):
+	Fix compilation error.
+
+2015-03-30  Artur Malabarba  <bruce.connor.am@gmail.com>
+
+	* emacs-lisp/package.el: Reorganize package.el and divide it with
+	page-breaks and comments.
+
+2015-03-30  Stefan Monnier  <monnier@iro.umontreal.ca>
+
+	* emacs-lisp/eieio-base.el (make-instance) <eieio-named>: New instance
+	which stores the old-style object name argument into the
+	object-name field.
+
+2015-03-30  Alan Mackenzie  <acm@muc.de>
+
+	Correct calculation of CC Mode's font-lock region.
+
+	* progmodes/cc-mode.el (c-fl-decl-start): Rename from
+	c-set-fl-decl-start.  Change signature such that nil is returned
+	when no declaration is found.
+	(c-change-expand-fl-region): Rename from
+	c-change-set-fl-decl-start.  This now also handles expanding the
+	font lock region to whole lines.
+	(c-context-expand-fl-region): Rename from
+	c-context-set-fl-decl-start.  This now also handles expanding the
+	font lock region to whole lines.
+	(c-font-lock-fontify-region): When a change font lock region is
+	spuriously enlarged to the beginning-of-line by jit-lock, fontify
+	the extra bit separately from the region calculated by CC Mode.
+	(c-extend-after-change-region): Explicitly apply 'fontified
+	properties to the extended bits of the font lock region.
+
+	* progmodes/cc-langs.el (c-before-font-lock-functions)
+	(c-before-context-fontification-functions): Use new names for
+	existing functions (see above).
+
+2015-03-30  Richard Ryniker  <ryniker@alum.mit.edu>  (tiny change)
+
+	* mail/sendmail.el (sendmail-send-it): Do not attempt to switch
+	to non-existent buffer (errbuf is not created when customization
+	variable mail-interactive is nil).  (Bug#20211)
+
+2015-03-29  Stefan Monnier  <monnier@iro.umontreal.ca>
+
+	* emacs-lisp/smie.el (smie-backward-sexp-command)
+	(smie-forward-sexp-command): Don't pretend the arg is optional
+	(bug#20205).
+
+2015-03-29  Dmitry Gutov  <dgutov@yandex.ru>
+
+	* progmodes/ruby-mode.el (ruby-syntax-before-regexp-re):
+	Detect regexps after `!'.  (Bug#19285)
+
+	* progmodes/ruby-mode.el (ruby-font-lock-keywords):
+	Use `font-lock-constant-face' for nil, true and false.
+	Highlight `self' as a keyword.  (Bug#17733)
+
+2015-03-29  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* progmodes/ruby-mode.el (ruby-syntax-before-regexp-re):
+	Expect beginning of regexp also after open brace or vertical bar.
+	(Bug#20026)
+
+2015-03-28  Jan Djärv  <jan.h.d@swipnet.se>
+
+	* emacs-lisp/package.el (package-refresh-contents): Fix spelling
+	error in previous change.
+
+2015-03-28  Tom Willemse  <tom@ryuslash.org>  (tiny change)
+
+	* elec-pair.el (electric-pair-local-mode): New command.
+	(electric-pair-mode): Mention `electric-pair-local-mode' in the
+	docstring.
+
+2015-03-28  Jan Djärv  <jan.h.d@swipnet.se>
+
+	* emacs-lisp/package.el (package-refresh-contents): Add a message at
+	the end so it does not appear to have hanged (Bug#17879).
+
+2015-03-27  Wolfgang Jenkner  <wjenkner@inode.at>
+
+	* font-lock.el (font-lock--remove-face-from-text-property):
+	New function.  Adapted from the previously commented out
+	remove-single-text-property.
+	Remove previously unused and commented out auxiliary function
+	remove-text-property and obsolete comment.
+	* comint.el (comint-output-filter): Use it to remove
+	comint-highlight-prompt.
+	(comint-snapshot-last-prompt, comint-output-filter):
+	Use font-lock-prepend-text-property for comint-highlight-prompt.
+	(Bug#20084)
+
+2015-03-26  Daniel Colascione  <dancol@dancol.org>
+	* progmodes/python.el
+	(python-indent-guess-indent-offset-verbose): New defcustom.
+	(python-indent-guess-indent-offset): Use it.
+
+2015-03-26  Stefan Monnier  <monnier@iro.umontreal.ca>
+
+	* emacs-lisp/eieio.el (defclass): Change internal name so as to make
+	sure only EIEIO files should have "eieio--" prefixes in their .elc.
+
+	* emacs-lisp/cl-macs.el (cl-dolist, cl-dotimes): Silence byte-compiler.
+
+2015-03-26  Boruch Baum  <boruch_baum@gmx.com>  (tiny change)
+
+	* bookmark.el (bookmark-show-all-annotations): Sort them (bug#20177).
+
+2015-03-25  Dmitry Gutov  <dgutov@yandex.ru>
+
+	* json.el (json-special-chars): Don't treat `/' specially, there's
+	no need to.
+	(json-encode-string): Only escape quotation mark, backslash and
+	the control characters U+0000 to U+001F.
+
+2015-03-25  Artur Malabarba  <bruce.connor.am@gmail.com>
+
+	* emacs-lisp/checkdoc.el (checkdoc-this-string-valid-engine):
+	Don't complain about args starting with _.
+
+2015-03-25  Stefan Monnier  <monnier@iro.umontreal.ca>
+
+	* international/mule-cmds.el (mule--ucs-names-annotation): New func.
+	(read-char-by-name): Use it.
+
+	* xt-mouse.el (xterm-mouse--read-number-from-terminal): Fix last commit.
+
+2015-03-25  Nicolas Petton <nicolas@petton.fr>
+
+	* emacs-lisp/seq.el: Documentation improvements.
+
+2015-03-25  Glenn Morris  <rgm@gnu.org>
+
+	* net/browse-url.el (browse-url-browser-function)
+	(browse-url-default-browser):
+	Remove obsolete items from the explicit listing.
+	(browse-url-new-window-flag, browse-url-of-file-hook): Doc fixes.
+	(browse-url-netscape-program, browse-url-netscape-arguments)
+	(browse-url-netscape-startup-arguments)
+	(browse-url-galeon-program, browse-url-galeon-arguments)
+	(browse-url-galeon-startup-arguments)
+	(browse-url-gnome-moz-program, browse-url-gnome-moz-arguments)
+	(browse-url-galeon-new-window-is-tab)
+	(browse-url-netscape-new-window-is-tab)
+	(browse-url-mosaic-program, browse-url-mosaic-arguments)
+	(browse-url-mosaic-pidfile, browse-url-CCI-port)
+	(browse-url-CCI-host, browse-url-netscape-version)
+	(browse-url-netscape, browse-url-netscape-sentinel)
+	(browse-url-netscape-reload, browse-url-netscape-send)
+	(browse-url-galeon, browse-url-galeon-sentinel)
+	(browse-url-gnome-moz, browse-url-mosaic, browse-url-cci)
+	(browse-url-w3-gnudoit): Make obsolete.
+	* ffap.el (ffap-url-fetcher): Simplify default and doc.
+
+2015-03-25  Olaf Rogalsky  <olaf.rogalsky@gmail.com>
+
+	* xt-mouse.el: Add mouse-tracking support (bug#19416).
+	(xterm-mouse-translate-1): Handle mouse-movement events.
+	(xterm-mouse--read-event-sequence-1000)
+	(xterm-mouse--read-event-sequence-1006): Delete functions.
+	(xterm-mouse--read-event-sequence): New function that handles both at
+	the same time.  Handle mouse-movements.
+	(xterm-mouse--read-utf8-char, xterm-mouse--read-number-from-terminal):
+	New functions.
+	(xterm-mouse-event): Simplify.
+	(xterm-mouse-tracking-enable-sequence)
+	(xterm-mouse-tracking-disable-sequence): Enable mouse tracking.
+
+	* mouse.el (mouse-drag-line): Also ignore `vertical-line' prefix events.
+
+2015-03-24  Michael Albinus  <michael.albinus@gmx.de>
+
+	* net/tramp-sh.el (tramp-do-file-attributes-with-ls)
+	(tramp-do-file-attributes-with-stat): Quote file names in output.
+	(tramp-do-directory-files-and-attributes-with-stat): Use "//" as marker.
+
+2015-03-24  Daiki Ueno  <ueno@gnu.org>
+
+	* epg.el (epg-start-generate-key): Fix typo in "gpg --gen-key"
+	invocation; make the PARAMETERS documentation clearer.
+
+2015-03-24  Stefan Monnier  <monnier@iro.umontreal.ca>
+
+	Add cl-struct specific optimizations to pcase.
+	* emacs-lisp/cl-macs.el (cl--struct-all-parents)
+	(cl--pcase-mutually-exclusive-p): New functions.
+	(pcase--mutually-exclusive-p): Advise to optimize cl-struct patterns.
+
+	* emacs-lisp/pcase.el (pcase--split-pred): Handle quoted string.
+
+2015-03-23  Stefan Monnier  <monnier@iro.umontreal.ca>
+
+	Add new `cl-struct' and `eieio' pcase patterns.
+	* emacs-lisp/cl-macs.el (cl-struct): New pcase pattern.
+	* emacs-lisp/eieio.el (eieio-pcase-slot-index-table)
+	(eieio-pcase-slot-index-from-index-table): New functions.
+	(eieio): New pcase pattern.
+	* emacs-lisp/pcase.el (pcase--make-docstring): New function.
+	(pcase): Use it to build the docstring.
+	(pcase-defmacro): Make sure the macro is lazy-loaded.
+	(\`): Move its docstring from `pcase'.
+
+2015-03-23  Glenn Morris  <rgm@gnu.org>
+
+	* emacs-lisp/authors.el (authors-aliases)
+	(authors-obsolete-files-regexps): Additions.
+
+2015-03-23  Jan Djärv  <jan.h.d@swipnet.se>
+
+	* simple.el (deactivate-mark): Only modify PRIMARY if we own
+	PRIMARY (Bug#18939).
+
+2015-03-23  Martin Rudalics  <rudalics@gmx.at>
+
+	* emacs-lisp/debug.el (debug): Don't try using "previous" window
+	when its not live or on an invisible frame (Bug#17170).
+
+2015-03-23  Dmitry Gutov  <dgutov@yandex.ru>
+
+	* json.el (json-decode-char0): Delete this alias as well.
+	(json-read-escaped-char): Don't call it (bug#20154).
+
+2015-03-23  Daniel Colascione  <dancol@dancol.org>
+
+	* emacs-lisp/lisp-mode.el (lisp--el-non-funcall-position-p): New function.
+	(lisp--el-match-keyword): Use it.
+
+2015-03-23  Daiki Ueno  <ueno@gnu.org>
+
+	* subr.el (start-process): New function, ported from the C
+	implementation.
+
+2015-03-23  Daniel Colascione  <dancol@dancol.org>
+
+	Automatically adjust process window sizes.
+
+	* window.el (window-adjust-process-window-size-function):
+	New customizable variable.
+	(window-adjust-process-window-size)
+	(window-adjust-process-window-size-smallest)
+	(window-adjust-process-window-size-largest)
+	(window--process-window-list, window--adjust-process-windows):
+	New functions.
+	(window-configuration-change-hook):
+	Add `window--adjust-process-windows'.
+	* term.el (term-mode): Observe result of
+	`window-adjust-process-window-size-function'.
+	(term-check-size): Delete.
+
+2015-03-22  Jackson Ray Hamilton  <jackson@jacksonrayhamilton.com>
+
+	* textmodes/sgml-mode.el (sgml-attribute-offset): New defcustom.
+	(sgml-calculate-indent): Use `sgml-attribute-offset' for attribute
+	indentation (bug#20161).
+
+2015-03-22  Dmitry Gutov  <dgutov@yandex.ru>
+
+	* json.el (json-encode-char0): Delete this alias.
+	(json-encode-string): Rewrite to improve performance (bug#20154).
+	(json-encode-char): Fold into `json-encode-string'.
+
+2015-03-22  Artur Malabarba  <bruce.connor.am@gmail.com>
+
+	* menu-bar.el (menu-bar-update-buffers): Count displayed buffers
+	for `buffers-menu-max-size', not total buffers.
+
+2015-03-21  Titus von der Malsburg  <malsburg@posteo.de>
+
+	* window.el (window-font-width, window-font-height)
+	(window-max-chars-per-line): New functions.
+
+	* simple.el (default-font-height): Doc fix.
+	(default-font-width): New function.
+
+2015-03-21  Tassilo Horn  <tsdh@gnu.org>
+
+	* emacs-lisp/lisp-mode.el (lisp-el-font-lock-keywords-1):
+	Also recognize (cl-)defmethod with (setf method) name.
+
+2015-03-20  Tassilo Horn  <tsdh@gnu.org>
+
+	* emacs-lisp/lisp-mode.el (lisp-el-font-lock-keywords-1):
+	Fix false positive in function name font-locking.
+	(lisp-cl-font-lock-keywords-1): Ditto.
+
+2015-03-20  Stefan Monnier  <monnier@iro.umontreal.ca>
+
+	* emacs-lisp/cl-macs.el (cl-defsubst): Ignore false-positive
+	occurrences of args via &cl-defs (bug#20149).
+
+2015-03-20  Alan Mackenzie  <acm@muc.de>
+
+	Fix debbugs#20146
+
+	* font-lock.el (font-lock-extend-jit-lock-region-after-change):
+	Return the calculated values, as per spec.
+
+2015-03-20  Dmitry Gutov  <dgutov@yandex.ru>
+
+	* progmodes/ruby-mode.el (ruby-font-lock-keywords): Move `at_exit'
+	and `callcc' to the "methods with required arguments" section,
+	they need a block argument.  Remove a `throw' duplicate.
+
+2015-03-19  Vibhav Pant  <vibhavp@gmail.com>
+
+	* progmodes/cperl-mode.el (cperl-electric-backspace):
+	Call delete-backward-space interactively instead of delete-char.
+
+2015-03-19  Stefan Monnier  <monnier@iro.umontreal.ca>
+
+	* emacs-lisp/pcase.el (pcase-lambda): Rewrite.
+
+	* emacs-lisp/eieio.el (object-slots): Return slot names as before
+	(bug#20141).
+
+2015-03-19  Stefan Monnier  <monnier@iro.umontreal.ca>
+
+	EIEIO: Change class's representation to unify instance and class slots
+	* emacs-lisp/eieio-core.el (eieio--class): Change field names and order
+	to match those of cl--class; use cl--slot for both instance slots and
+	class slots.
+	(eieio--object-num-slots): Use cl-struct-slot-info.
+	(eieio--object-class): Rename from eieio--object-class-object.
+	(eieio--object-class-name): Remove.
+	(eieio-defclass-internal): Adjust to new slot representation.
+	Store doc in class rather than in `variable-documentation'.
+	(eieio--perform-slot-validation-for-default): Change API to take
+	a slot object.
+	(eieio--slot-override): New function.
+	(eieio--add-new-slot): Rewrite.
+	(eieio-copy-parents-into-subclass): Rewrite.
+	(eieio--validate-slot-value, eieio--validate-class-slot-value)
+	(eieio-oref-default, eieio-oset-default)
+	(eieio--class-slot-name-index, eieio-set-defaults): Adjust to new
+	slot representation.
+	(eieio--c3-merge-lists): Simplify.
+	(eieio--class/struct-parents): New function.
+	(eieio--class-precedence-bfs): Use it.
+
+	* emacs-lisp/eieio.el (with-slots): Use macroexp-let2.
+	(object-class-fast): Change recommend replacement.
+	(eieio-object-class): Rewrite.
+	(slot-exists-p): Adjust to new slot representation.
+	(initialize-instance): Adjust to new slot representation.
+	(object-write): Adjust to new slot representation.
+
+	* emacs-lisp/eieio-opt.el (eieio--help-print-slot): New function
+	extracted from eieio-help-class-slots.
+	(eieio-help-class-slots): Use it.  Adjust to new slot representation.
+
+	* emacs-lisp/eieio-datadebug.el (data-debug/eieio-insert-slots):
+	Declare to silence warnings.
+	(data-debug-insert-object-button): Avoid `object-slots'.
+	(data-debug/eieio-insert-slots): Adjust to new slot representation.
+
+	* emacs-lisp/eieio-custom.el (eieio-object-value-create)
+	(eieio-object-value-get): Adjust to new slot representation.
+
+	* emacs-lisp/eieio-compat.el
+	(eieio--generic-static-symbol-specializers):
+	Extract from eieio--generic-static-symbol-generalizer.
+	(eieio--generic-static-symbol-generalizer): Use it.
+
+	* emacs-lisp/eieio-base.el (eieio-persistent-convert-list-to-object):
+	Manually map initargs to slot names.
+	(eieio-persistent-validate/fix-slot-value): Adjust to new
+	slot representation.
+
+	* emacs-lisp/cl-preloaded.el (cl--class): Fix type of `parents'.
+
+2015-03-19  Vibhav Pant  <vibhavp@gmail.com>
+
+	* leim/quail/hangul.el (hangul-delete-backward-char)
+	(hangul-to-hanja-conversion):
+	* progmodes/cperl-mode.el (cperl-electric-keyword)
+	(cperl-electric-backspace): Use delete-char instead of
+	delete-backward-char, fixes compilation warnings.
+
+2015-03-18  Michael Albinus  <michael.albinus@gmx.de>
+
+	* net/tramp-sh.el (tramp-do-directory-files-and-attributes-with-stat):
+	Mark apostrophs with ?/ instead of \037.  (Bug#20117)
+
+2015-03-18  Stefan Monnier  <monnier@iro.umontreal.ca>
+
+	Add classes as run-time descriptors of cl-structs.
+	* emacs-lisp/cl-preloaded.el (cl--struct-get-class): New function.
+	(cl--make-slot-desc): New constructor.
+	(cl--plist-remove, cl--struct-register-child): New functions.
+	(cl-struct-define): Rewrite.
+	(cl-structure-class, cl-structure-object, cl-slot-descriptor)
+	(cl--class): New structs.
+	(cl--struct-default-parent): Initialize it here.
+	* emacs-lisp/cl-macs.el (cl--find-class): New macro.
+	(cl-defsubst, cl--defsubst-expand, cl--sublis): Move before first use.
+	(cl--struct-default-parent): New var.
+	(cl-defstruct): Adjust to new representation of classes; add
+	default parent.  In accessors, signal `wrong-type-argument' rather than
+	a generic error.
+	(cl-struct-sequence-type, cl-struct-slot-info)
+	(cl-struct-slot-offset): Rewrite.
+	* emacs-lisp/cl-generic.el (cl--generic-struct-specializers)
+	(cl-generic-generalizers): Rewrite.
+
+	* emacs-lisp/macroexp.el (macroexp--debug-eager): New var.
+	(internal-macroexpand-for-load): Use it.
+
+	* emacs-lisp/debug.el (debug--implement-debug-on-entry):
+	Bind inhibit-debug-on-entry here...
+	(debug): Instead of here.
+
+2015-03-18  Dima Kogan  <dima@secretsauce.net>
+
+	Have gud-display-line not display source buffer in gud window.
+	* progmodes/gud.el (gud-display-line): Make display-buffer
+	not reuse selected window.  (Bug#17675, Bug#19901, Bug#20034)
+
+2015-03-17  Tassilo Horn  <tsdh@gnu.org>
+
+	* emacs-lisp/byte-run.el (macro-declarations-alist):
+	New declaration no-font-lock-keyword.
+	(defmacro): Flush font-lock in existing elisp buffers.
+
+	* emacs-lisp/lisp-mode.el (lisp--el-update-after-load)
+	(lisp--el-update-macro-regexp, lisp--el-macro-regexp):
+	Delete functions and defconst.
+	(lisp--el-match-keyword): Rename from lisp--el-match-macro.
+	(lisp--el-font-lock-flush-elisp-buffers): New function.
+	(lisp-mode-variables): Remove code for updating
+	lisp--el-macro-regexp, and add
+	lisp--el-font-lock-flush-elisp-buffers to after-load-functions.
+
+2015-03-17  Simen Heggestøyl  <simenheg@gmail.com>
+
+	* textmodes/css-mode.el (css--font-lock-keywords):
+	Discriminate between pseudo-classes and pseudo-elements.
+	(css-pseudo-ids): Remove.
+	(css-pseudo-class-ids, css-pseudo-element-ids): New variables.
+	(css--complete-property): New function for completing CSS properties.
+	(css--complete-pseudo-element-or-class): New function
+	completing CSS pseudo-elements and pseudo-classes.
+	(css--complete-at-rule): New function for completing CSS at-rules.
+	(css-completion-at-point): New function.
+	(css-mode): Add support for completion.
+	(css-extract-keyword-list, css-extract-parse-val-grammar)
+	(css-extract-props-and-vals): Remove function in favor of manual
+	extraction.
+	(css-at-ids): Update list of CSS at-rule ids.
+	(css-property-ids): Update list of CSS properties.
+
+2015-03-17  Bozhidar Batsov  <bozhidar@batsov.com>
+
+	* progmodes/ruby-mode.el (ruby-font-lock-keywords): Font-lock
+	more Kernel methods.
+
+2015-03-17  Michael Albinus  <michael.albinus@gmx.de>
+
+	* net/tramp-sh.el (tramp-maybe-send-script): Avoid leading tabs in
+	shell scripts.  (Bug#20118)
+
+2015-03-17  Eli Zaretskii  <eliz@gnu.org>
+
+	* mouse.el (mouse-appearance-menu): If w32-use-w32-font-dialog is
+	nil, construct a menu of fixed fonts.  This resurrects a feature
+	lost in Emacs 23.
+
+	* w32-vars.el (w32-use-w32-font-dialog): Add a ':set' function to
+	reset mouse-appearance-menu-map, so the font dialog is recomputed
+	the next time the menu is requested.
+	(w32-fixed-font-alist): Fix to use correct names of Courier fonts.
+
+2015-03-17  Stefan Monnier  <monnier@iro.umontreal.ca>
+
+	* emacs-lisp/cl-macs.el (cl--transform-lambda): Refine last change
+	(bug#20125).
+
+2015-03-17  Michael Albinus  <michael.albinus@gmx.de>
+
+	* net/tramp-sh.el (tramp-ssh-controlmaster-options): Change test
+	for ControlPath in order to avoid DNS timeouts.  (Bug#20015)
+
+2015-03-16  Alan Mackenzie  <acm@muc.de>
+
+	Edebug: Allow "S" to work during trace mode.  Fixes debbugs #20074.
+	Also display the overlay arrow in go and go-nonstop modes.
+
+	* emacs-lisp/edebug.el (edebug--display-1): Move the
+	`input-pending' test to after trace mode's `sit-for'.
+	(edebug--recursive-edit): Insert "(sit-for 0)" after
+	"(edebug-overlay-arrow)".
+
+2015-03-16  Stefan Monnier  <monnier@iro.umontreal.ca>
+
+	* emacs-lisp/cl-macs.el (cl--transform-lambda): Rework to avoid
+	cl--do-arglist in more cases; add comments to explain what's going on.
+	(cl--do-&aux): New function extracted from cl--do-arglist.
+	(cl--do-arglist): Use it.
+
+	* emacs-lisp/cl-generic.el: Add Version: header, for ELPA purposes.
+
+	* obsolete/iswitchb.el (iswitchb-read-buffer): Add `predicate' arg.
+	* isearchb.el (isearchb-iswitchb): Adjust accordingly.
+	* ido.el (ido-read-buffer): Add `predicate' argument.
+	* misearch.el (unload-function-defs-list): Declare before use.
+
+2015-03-16  Vibhav Pant  <vibhavp@gmail.com>
+
+	* net/browse-url.el (browse-url-browser-function): Add "Conkeror".
+	(browse-url-conkeror-program, browse-url-conkeror-arguments)
+	(browse-url-conkeror-new-window-is-buffer): New defcustoms.
+	(browse-url-default-browser): Check for `browse-url-conkeror'
+	and call `browse-url-conkeror-program'.
+	(browse-url-conkeror): New command.
+	(bug#19863)
+
+2015-03-16  Vibhav Pant  <vibhavp@gmail.com>
+
+	* eshell/esh-mode.el (eshell/clear): New function.
+
+2015-03-16  Alan Mackenzie  <acm@muc.de>
+
+	Make Edebug work with Follow Mode.
+
+	* emacs-lisp/edebug.el (edebug--display-1): Remove call to
+	edebug-adjust-window.
+	(edebug--recursive-edit): Don't bind pre/post-command-hooks to nil
+	over the recursive edit.
+	(edebug-adjust-window): Remove.
+
 2015-03-15  Michael Albinus  <michael.albinus@gmx.de>
 
 	* net/tramp-adb.el:
@@ -39,7 +673,7 @@
 
 	* progmodes/sql.el: Version 3.5
 	(sql-starts-with-prompt-re, sql-ends-with-prompt-re): Match password prompts.
-	(sql-interactive-remove-continuation-prompt): Fixed regression. (Bug#6686)
+	(sql-interactive-remove-continuation-prompt): Fix regression. (Bug#6686)
 
 2015-03-14  Daniel Colascione  <dancol@dancol.org>
 
@@ -54,8 +688,8 @@
 	info-look fixes for Texinfo 5
 	* info-look.el (c-mode, bison-mode, makefile-mode)
 	(makefile-automake-mode, texinfo-mode, autoconf-mode, awk-mode)
-	(latex-mode, emacs-lisp-mode, sh-mode, cfengine-mode): Match
-	`foo' and 'foo' and ‘foo’ for @item and similar.
+	(latex-mode, emacs-lisp-mode, sh-mode, cfengine-mode):
+	Match `foo' and 'foo' and ‘foo’ for @item and similar.
 	(latex-mode): Match multi-arg \frac{num}{den} or \sqrt[root]{n} in
 	suffix regexp.
 
@@ -1535,7 +2169,7 @@
 
 2015-01-30  Oleh Krehel  <ohwoeowho@gmail.com>
 
-	* lisp/custom.el (defface): Set `indent' to 1.
+	* custom.el (defface): Set `indent' to 1.
 
 2015-01-30  Oleh Krehel  <ohwoeowho@gmail.com>
 
@@ -1543,21 +2177,21 @@
 
 2015-01-30  Michal Nazarewicz  <mina86@mina86.com>
 
-	* lisp/files.el (save-buffers-kill-emacs): If `confirm-kill-emacs'
+	* files.el (save-buffers-kill-emacs): If `confirm-kill-emacs'
 	is set, but user has just been asked whether they really want to
 	kill Emacs (for example with a ‘Modified buffers exist; exit
 	anyway?’ prompt), do not ask them for another confirmation.
 
 2015-01-29  Jay Belanger  <jay.p.belanger@gmail.com>
 
-	* lisp/calc/calc-units.el (calc-convert-exact-units): New function.
+	* calc/calc-units.el (calc-convert-exact-units): New function.
 	(calc-convert-units): Check for missing units.
 	(math-consistent-units-p): Strengthen the test for consistent units.
 
-	* lisp/calc/calc-ext.el (calc-init-extensions):  Autoload
+	* calc/calc-ext.el (calc-init-extensions):  Autoload
 	`calc-convert-exact-units' and assign it a keybinding.
 
-	* lisp/calc/calc-help (calc-u-prefix-help): Add help for the
+	* calc/calc-help (calc-u-prefix-help): Add help for the
 	"un" keybinding.
 
 2015-01-28  Stefan Monnier  <monnier@iro.umontreal.ca>
